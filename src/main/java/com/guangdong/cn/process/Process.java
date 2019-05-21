@@ -39,22 +39,18 @@ public class Process {
                 public void run() {
                     while (downLoadQueue.size() > 0){
                         try {
-                            //获取文件名
-                            String fileName = downLoadQueue.poll();
+                            String fileName = downLoadQueue.poll();//获取文件名
+
                             //ftp客户端去下载指定文件
                             FTPClient ftpClient = ftpClientPool.borrowObject();
-                            boolean connection = FtpUtils.downLoadFile(ftpClient, GlobalConfUtils.FtpPath, fileName, GlobalConfUtils.DownloadPath);
-                            if (!connection){//如果下载过程中未获得连接,文件未处理
-                                downLoadQueue.put(fileName);//将文件重新加入队列
-                            }
+                            FtpUtils.downLoadFile(ftpClient, GlobalConfUtils.FtpPath, fileName, GlobalConfUtils.DownloadPath,downLoadQueue.size());
                             ftpClientPool.returnObject(ftpClient);
-                            //2. zip/gz文件解压
-                            //要解压的文件
-                            String gzOrZip = GlobalConfUtils.DownloadPath + fileName;
-                            //解压后的存放目录
-                            String descDir = GlobalConfUtils.XmlPath;
-                            //解压zip或gz
-                            FileUtils.unTarGZAndZip(gzOrZip,descDir,queue);
+
+                            String gzOrZip = GlobalConfUtils.DownloadPath + fileName;//要解压的文件
+
+                            String descDir = GlobalConfUtils.XmlPath;//解压后的存放目录
+
+                            FileUtils.unTarGZAndZip(gzOrZip,descDir,queue);//解压zip或gz
                         }catch(Exception e) {
                             e.printStackTrace();
                         }

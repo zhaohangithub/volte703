@@ -20,13 +20,6 @@
     </properties>
 
     <dependencies>
-        <!--hbase-->
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-it</artifactId>
-            <version>${hbase.version}</version>
-        </dependency>
-
         <!--hadoop-->
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -51,84 +44,11 @@
             <version>${hive.version}</version>
         </dependency>
 
-        <!--spark-->
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming-kafka-0-8_${scala.v}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-hive_${scala.v}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <!--sparkstreaming-->
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-streaming_${scala.v}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <!--sparksql-->
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-sql_${scala.v}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <!--sparkcore-->
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-core_${scala.v}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <!--sparkgraphx-->
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-graphx_${scala.v}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
-        <!--es-saprk-->
-        <dependency>
-            <groupId>org.elasticsearch</groupId>
-            <artifactId>elasticsearch-spark-20_${scala.v}</artifactId>
-            <version>${elasticasearch.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.32</version>
-        </dependency>
-        <!--spark读取xml文件-->
-        <dependency>
-            <groupId>com.databricks</groupId>
-            <artifactId>spark-xml_${scala.v}</artifactId>
-            <version>0.3.1</version>
-        </dependency>
-        <!--xml2json-->
-        <dependency>
-            <groupId>org.json</groupId>
-            <artifactId>json</artifactId>
-            <version>20180130</version>
-        </dependency>
-
-
-
-        <!--解析json-->
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.44</version>
-        </dependency>
         <!--读取resources配置文件-->
         <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
             <version>1.2.1</version>
-        </dependency>
-        <!-- 解压rar -->
-        <dependency>
-            <groupId>com.github.junrar</groupId>
-            <artifactId>junrar</artifactId>
-            <version>3.0.0</version>
         </dependency>
 
         <!-- 解压zip -->
@@ -136,13 +56,6 @@
             <groupId>org.apache.ant</groupId>
             <artifactId>ant</artifactId>
             <version>1.9.4</version>
-        </dependency>
-
-        <!--jedis-->
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>2.9.0</version>
         </dependency>
 
         <!--xml文件解析-->
@@ -156,6 +69,12 @@
             <groupId>commons-net</groupId>
             <artifactId>commons-net</artifactId>
             <version>2.2</version>
+        </dependency>
+        <!--输出日志-->
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
         </dependency>
     </dependencies>
 

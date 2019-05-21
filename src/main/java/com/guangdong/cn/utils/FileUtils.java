@@ -198,16 +198,17 @@ public class FileUtils {
         }
     }
 
+
+    /**
+     * 第二次解压
+     * xml.zip文件
+     * @param file
+     * @return
+     */
     public static String unXmlZip(File file){
         String zipFile = file.getAbsolutePath();
         return unXmlZip(zipFile);
     }
-    /**
-     * 第二次解压
-     * xml.zip文件
-     * @param zipFile
-     * @return
-     */
     public static String unXmlZip(String zipFile){
         int index = zipFile.indexOf(".");
         String xmlFile = zipFile.substring(0,index) +".xml";
@@ -241,17 +242,16 @@ public class FileUtils {
         }
         return xmlFile;
     }
-
-    public static String unXmlGZ(File file){
-        String filename = file.getAbsolutePath();
-        return unXmlGZ(filename);
-    }
     /**
      * 第二次解压
      * 解压xml.gz文件得到xml文件
      * @param
      *
      */
+    public static String unXmlGZ(File file){
+        String filename = file.getAbsolutePath();
+        return unXmlGZ(filename);
+    }
     public static String unXmlGZ(String file){
         int index = file.indexOf(".");
         String xmlFile = file.substring(0,index) +".xml";
@@ -281,16 +281,15 @@ public class FileUtils {
         return xmlFile;
 
     }
+    /**
+     * 解析xml文件,返回结果集
+     * @param filename
+     * @return
+     */
     public static List<Element> readXml(String filename){
         File file = new File(filename);
         return readXml(file);
     }
-
-    /**
-     * 解析xml文件,返回结果集
-     * @param file
-     * @return
-     */
     public static List<Element> readXml(File file){
         if (!file.exists()){//如果文件不存在,返回空集合
             return new ArrayList<>();

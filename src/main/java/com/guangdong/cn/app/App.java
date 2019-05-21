@@ -27,9 +27,6 @@ public class App {
         System.out.println("begin------------");
 
         GenericObjectPool<FTPClient> ftpClientPool = new GenericObjectPool<>(new FtpClientFactory(new FtpClientProperties()));//ftp连接池
-        //ftpClientPool.setMaxIdle(30);//最大空闲
-        ftpClientPool.setMinIdle(10);
-
 
         LinkedBlockingQueue<String> ftpQueue = new LinkedBlockingQueue();//ftp文件名队列
         LinkedBlockingQueue<String> xmlQueue = new LinkedBlockingQueue();//xml文件名队列
@@ -41,8 +38,8 @@ public class App {
         Process.ftpProcess(ftpClientPool,ftpQueue,xmlQueue);//2. 多线程:下载文件并将所有xml文件放入queue队列
         LinkedBlockingQueue<String> queue = FilterUtils.fileFilter(xmlQueue, cellIds);//3. 文件名过滤
         Process.fileProcess(ftpClientPool,queue,list1);//4. 多线程:xml文件解析,写入csv文件
-        //文件清除
-        //Process.deleteProcess();
+
+        //Process.deleteProcess();//文件清除
         System.out.println("end----------------");
     }
 }

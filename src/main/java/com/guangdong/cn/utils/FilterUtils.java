@@ -33,7 +33,6 @@ public class FilterUtils {
                         ftpQueue.put(file);
                     }
                 }
-
             }
         } catch (Exception e) {
             e.printStackTrace();
