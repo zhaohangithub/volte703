@@ -2,6 +2,7 @@ package com.guangdong.cn.pools;
 
 
 import com.guangdong.cn.utils.GlobalConfUtils;
+import org.jruby.RubyBoolean;
 
 public class FtpClientProperties {
     // ftp地址
@@ -13,15 +14,17 @@ public class FtpClientProperties {
     // 登录密码
     private String FtpPassword = GlobalConfUtils.FtpPassword;
     // 被动模式
-    private boolean PassiveMode = false;
+    private boolean PassiveMode = true;
     // 编码
     private String Encoding = "UTF-8";
     // 连接超时时间(秒)
-    private Integer ConnectTimeout = 30000;
+    private Integer ConnectTimeout = 60000;
     // 缓冲大小
-    private Integer bufferSize = 1024;
+    private Integer bufferSize = 1024*8;
     // 传输文件类型
     private Integer transferFileType;
+
+
 
     public String getFtpUrl() {
         return FtpUrl;

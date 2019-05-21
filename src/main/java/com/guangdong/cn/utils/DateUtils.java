@@ -10,21 +10,21 @@ import java.util.Date;
 
 public class DateUtils {
     //线程安全的dateformat
-    private static final DateParser DATE_PARSER = FastDateFormat.getInstance("yyyy-MM-dd'T'HH:mm:ss.SSS");
+    private static final FastDateFormat DATE_FORMAT = FastDateFormat.getInstance("yyyyMMddHHmmss");
 
-    //字符串转时间戳
-    public static long date2timestamp(String date){
-        long timestamp = 0;
+    //日期转字符串
+    public static String date2String(Date date){
+        return DATE_FORMAT.format(date);
+    }
 
-        if(!StringUtils.isEmpty(date)){
-            try {
-                timestamp = DATE_PARSER.parse(date).getTime();
-
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
+    //字符串转日期
+    public static Date string2Date(String date){
+        Date date1 = null;
+        try {
+            date1 = DATE_FORMAT.parse(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
-
-        return  timestamp;
+        return date1;
     }
 }

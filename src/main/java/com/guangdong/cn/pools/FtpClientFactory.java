@@ -5,7 +5,6 @@ import org.apache.commons.net.ftp.FTPReply;
 import org.apache.commons.pool2.BasePooledObjectFactory;
 import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
-import sun.rmi.runtime.Log;
 
 import java.io.IOException;
 
@@ -17,18 +16,16 @@ public class FtpClientFactory extends BasePooledObjectFactory<FTPClient> {
         this.config = config;
     }
 
-
     /**
      * 创建FtpClient对象
      */
     @Override
     public FTPClient create() {
-
         FTPClient ftpClient = new FTPClient();
+        ftpClient.setDataTimeout(60000);
         ftpClient.setControlEncoding(config.getEncoding());
         ftpClient.setConnectTimeout(config.getConnectTimeout());
         try {
-
             ftpClient.connect(config.getFtpUrl(), config.getFtpPort());
             int replyCode = ftpClient.getReplyCode();
             if (!FTPReply.isPositiveCompletion(replyCode)) {

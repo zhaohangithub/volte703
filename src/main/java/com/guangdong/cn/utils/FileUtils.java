@@ -1,6 +1,6 @@
 package com.guangdong.cn.utils;
 
-import com.guangdong.cn.utils.GlobalConfUtils;
+import org.apache.commons.collections.map.MultiValueMap;
 import org.apache.tools.tar.TarEntry;
 import org.apache.tools.tar.TarInputStream;
 import org.dom4j.*;
@@ -9,6 +9,8 @@ import org.dom4j.io.SAXReader;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
@@ -16,18 +18,51 @@ import java.util.zip.ZipFile;
 
 /**
  * 文件操作工具类
- * 1.解压gz文件目录
- * 2.解压zip文件目录
- * 3.获取指定目录所有文件
- * 4.解压单个gz文件成xml文件
- * 5.删除文件
- * 6.读xml文件
- * 7.set集合数据输出到文件
- * 8.解压rar文件
+ * 解压tar.gz包 解压zip包
+ * 解压单文件gz zip
+ * 删除文件
+ * 读xml文件
+ * set集合数据输出到文件
+ * xml文件内容写入新文件txt csv
+ * 解压rar
  */
 public class FileUtils {
 
+
     /**
+     * 第一次解压
+     * 数据源是zip或者gz
+     * 解压到指定目录并将文件名存入queue队列
+     * @param gzOrZip
+     * @param descDir
+     * @param queue
+     */
+    public static void unTarGZAndZip(String gzOrZip, String descDir, LinkedBlockingQueue queue){
+        if (gzOrZip.endsWith(".zip")){
+            FileUtils.unZipFiles(gzOrZip, descDir,queue);
+        }else if(gzOrZip.endsWith(".gz")){
+            FileUtils.unTarGz(gzOrZip, descDir,queue);
+        }else {
+            System.out.println("文件类型不符合要求:"+gzOrZip);
+        }
+    }
+
+    /**
+     * 第二次解压
+     * 源文件是.xml.gz或.xml.zip
+     * 解压到当前目录并返回解压后的文件名
+     * @param filename
+     * @return
+     */
+    public static String unXmlGZAndZip(String filename){
+        if (filename.endsWith(".gz")){
+            return unXmlGZ(filename);
+        }else {
+            return unXmlZip(filename);
+        }
+    }
+    /**
+     * 第一次解压
      * 解压gz文件夹
      * @param gzFile
      * @param outputDir
@@ -37,25 +72,33 @@ public class FileUtils {
         TarInputStream tarIn = null;
         try{
             tarIn = new TarInputStream(new GZIPInputStream(
-                    new BufferedInputStream(new FileInputStream(new File(gzFile)))));
+                    new BufferedInputStream(new FileInputStream(gzFile))));
 
             createDirectory(outputDir,null);//创建输出目录
 
             TarEntry entry = null;
             while( (entry = tarIn.getNextEntry()) != null ){
-
                 if(entry.isDirectory()){//是目录
                     entry.getName();
                     createDirectory(outputDir,entry.getName());//创建空目录
                 }else{//是文件
-                    String outFile = outputDir + "/" + entry.getName();
+                    String name = entry.getName();
+                    if (name.contains("/")){//如果压缩包里包含文件夹,过滤掉文件夹,直接取最后文件
+                        String[] split = name.split("/");
+                        name = split[split.length - 1];
+                    }
+                    String outFile = outputDir  + name;
                     File tmpFile = new File(outFile);
-                    createDirectory(tmpFile.getParent() + "/",null);//创建输出目录
-                    OutputStream out = null;
+                    if (tmpFile.exists()){//如果文件存在,将文件名存入队列,跳过
+                        queue.put(outFile);
+                        continue;
+                    }
+                    createDirectory(tmpFile.getParent() ,null);//创建输出目录
+                    BufferedOutputStream out = null;
                     try{
-                        out = new FileOutputStream(tmpFile);
+                        out = new BufferedOutputStream(new FileOutputStream(tmpFile));
                         int length = 0;
-                        byte[] b = new byte[2048];
+                        byte[] b = new byte[1024 * 8];
                         while((length = tarIn.read(b)) != -1){
                             out.write(b, 0, length);
                         }
@@ -91,7 +134,7 @@ public class FileUtils {
     public static void createDirectory(String outputDir,String subDir){
         File file = new File(outputDir);
         if(!(subDir == null || subDir.trim().equals(""))){//子目录不为空
-            file = new File(outputDir + "/" + subDir);
+            file = new File(outputDir + subDir);
         }
         if(!file.exists()){
             if(!file.getParentFile().exists())
@@ -101,14 +144,14 @@ public class FileUtils {
     }
 
     /**
-     * 解压从ftp下载的zip文件
+     * 第一次解压
+     * zip文件
      * @param zipFile  指定要解压的zip文件
      * @param descDir  解压后输出的文件目录
      */
     public static void unZipFiles(String zipFile, String descDir, LinkedBlockingQueue<String> queue){
         try{
             ZipFile zip = new ZipFile(new File(zipFile), Charset.forName("utf-8"));//解决中文文件夹乱码
-            //String name = zip.getName().substring(zip.getName().lastIndexOf('\\')+1, zip.getName().lastIndexOf('.'));
 
             File pathFile = new File(descDir);
             if (!pathFile.exists()) {
@@ -120,10 +163,14 @@ public class FileUtils {
                 String zipEntryName = entry.getName();
                 InputStream in = zip.getInputStream(entry);
                 BufferedInputStream bis = new BufferedInputStream(in);
-                String outPath = (descDir+"/"+ zipEntryName).replaceAll("\\*", "/");
-
+                String outPath = descDir+ zipEntryName;
+                File file1 = new File(outPath);
+                if (file1.exists()){//如果文件存在,将文件名放入队列中,跳过
+                    queue.put(outPath);
+                    continue;
+                }
                 // 判断路径是否存在,不存在则创建文件路径
-                File file = new File(outPath.substring(0, outPath.lastIndexOf('/')));
+                File file = new File(descDir);
                 if (!file.exists()) {
                     file.mkdirs();
                 }
@@ -134,7 +181,7 @@ public class FileUtils {
 
                 FileOutputStream out = new FileOutputStream(outPath);
                 BufferedOutputStream bos = new BufferedOutputStream(out);
-                byte[] buf1 = new byte[1024];
+                byte[] buf1 = new byte[1024 * 8];
                 int len;
                 while ((len = bis.read(buf1)) > 0) {
                     bos.write(buf1, 0, len);
@@ -145,58 +192,81 @@ public class FileUtils {
                 in.close();
                 queue.put(outPath);
             }
-            System.out.println("******************zip文件解压完毕********************");
+            //System.out.println("******************zip文件解压完毕********************");
         }catch (Exception e){
             e.printStackTrace();
         }
     }
 
+    public static String unXmlZip(File file){
+        String zipFile = file.getAbsolutePath();
+        return unXmlZip(zipFile);
+    }
     /**
-     * 根据文件目录获取所有gz文件,并放入redis队列   或 queue队列
-     * @param gzFileDir
+     * 第二次解压
+     * xml.zip文件
+     * @param zipFile
+     * @return
      */
-    public static void getFilename(String gzFileDir,LinkedBlockingQueue<String> queue){
-
-        //Jedis jedis = JedisUtils.getJedis();
+    public static String unXmlZip(String zipFile){
+        int index = zipFile.indexOf(".");
+        String xmlFile = zipFile.substring(0,index) +".xml";
+        File file = new File(xmlFile);
+        if (file.exists()){
+            return xmlFile;
+        }
         try{
-            File file = new File(gzFileDir);
+            ZipFile zip = new ZipFile(new File(zipFile), Charset.forName("utf-8"));//解决中文文件夹乱码
 
-            File[] files = file.listFiles();
-            for (File gz : files) {
-                //把每个文件路径存入redis队列
-                //jedis.lpush("BigData_filename",gz.getAbsolutePath());
-                //放入queue队列
-                if (gz.isDirectory()){
-                    getFilename(gz.getAbsolutePath(),queue);
-                }else {
-                    queue.put(gz.getAbsolutePath());
+            for (Enumeration<? extends ZipEntry> entries = zip.entries(); entries.hasMoreElements();) {
+                ZipEntry entry = (ZipEntry) entries.nextElement();
+                String zipEntryName = entry.getName();
+                InputStream in = zip.getInputStream(entry);
+                BufferedInputStream bis = new BufferedInputStream(in);
+
+                FileOutputStream out = new FileOutputStream(xmlFile);
+                BufferedOutputStream bos = new BufferedOutputStream(out);
+                byte[] buf1 = new byte[1024 * 8];
+                int len;
+                while ((len = bis.read(buf1)) > 0) {
+                    bos.write(buf1, 0, len);
                 }
+                bos.close();
+                bis.close();
+                out.close();
+                in.close();
             }
-            //jedis.close();
         }catch (Exception e){
             e.printStackTrace();
         }
-
+        return xmlFile;
     }
 
+    public static String unXmlGZ(File file){
+        String filename = file.getAbsolutePath();
+        return unXmlGZ(filename);
+    }
     /**
-     * 解压gz文件得到xml文件
-     * @param filename
+     * 第二次解压
+     * 解压xml.gz文件得到xml文件
+     * @param
      *
      */
-    public static String unGZ(String filename){
-        String xmlFile = "";
-        try {
+    public static String unXmlGZ(String file){
+        int index = file.indexOf(".");
+        String xmlFile = file.substring(0,index) +".xml";
+        File file1 = new File(xmlFile);
+        if (file1.exists()){//如果文件存在,直接返回文件名进行下一步处理
+            return xmlFile;
+        }
+        try {//如果文件不存在,解压,并输出文件
             //解压gz文件的输入流
-            InputStream in = new GZIPInputStream(new FileInputStream(filename));
+            InputStream in = new GZIPInputStream(new FileInputStream(file));
             BufferedInputStream bis = new BufferedInputStream(in);
-            //目标文件
-            xmlFile = filename.substring(0,filename.length()-3);
 
-            File OutDir = new File(xmlFile);
             byte[] buffer = new byte[1024*8];
             //输出
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(OutDir));
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file1));
             int count = -1;
             while ((count = bis.read(buffer)) != -1) {
                 bos.write(buffer, 0, count);
@@ -205,55 +275,26 @@ public class FileUtils {
             in.close();
             bos.close();
 
-            System.out.println(Thread.currentThread().getName()+filename+"--------解压成功");
-
         }catch (Exception e ){
             e.printStackTrace();
         }
         return xmlFile;
 
     }
-
-    /**
-     * 读取xml文件 dom方式,很耗时间
-     * @param xmlFile
-     */
-    public  static List<Element> readXml(String xmlFile){
-        SAXReader reader = new SAXReader();
-        File file = new File(xmlFile);
-        FileInputStream fis = null;
-        BufferedInputStream bis = null;
-        List<Element> elementList = null;
-
-        try {
-            fis = new FileInputStream(file);
-            bis = new BufferedInputStream(fis);
-            Document document = reader.read(bis);
-            elementList = document.selectNodes(GlobalConfUtils.Nodes);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            System.err.println("File is not exsit!");
-        } catch (DocumentException e) {
-            e.printStackTrace();
-        }finally {
-                try {
-                    if (bis != null)
-                        bis.close();
-                    if (fis != null)
-                        fis.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-        }
-        return elementList;
+    public static List<Element> readXml(String filename){
+        File file = new File(filename);
+        return readXml(file);
     }
 
     /**
-     * 读xml文件 sax方式 效率较高
+     * 解析xml文件,返回结果集
      * @param file
      * @return
      */
-    public static List<Element> saxReadXml(String file){
+    public static List<Element> readXml(File file){
+        if (!file.exists()){//如果文件不存在,返回空集合
+            return new ArrayList<>();
+        }
         List<Element> elementList = new ArrayList<>();
         SAXReader saxReader = new SAXReader();
         saxReader.addHandler(GlobalConfUtils.SAX_Nodes, new ElementHandler() {
@@ -261,16 +302,15 @@ public class FileUtils {
             public void onEnd(ElementPath elementPath) {
                 Element object = elementPath.getCurrent();
                 elementList.add(object);
-                object.detach();
+                object.detach();//关闭element
             }
-
             @Override
             public void onStart(ElementPath elementPath) {
 
             }
         });
         try {
-            saxReader.read(new BufferedInputStream(new FileInputStream(new File(file))));
+            saxReader.read(new BufferedInputStream(new FileInputStream(file)));
         } catch (DocumentException e) {
             e.printStackTrace();
         } catch (FileNotFoundException e) {
@@ -280,38 +320,33 @@ public class FileUtils {
     }
 
     /**
-     * 删除处理完成的文件
-     * @param filename 文件名
-     */
-    public static void delete(String filename){
-        File file = new File(filename);
-        if (!file.exists()){
-            System.out.println("文件不存在或已被删除");
-        }else {
-            boolean delete = file.delete();
-            /*String status = delete ? Thread.currentThread().getName()+":"+filename + "------删除成功" : filename + "============删除失败";
-            System.out.println(status);*/
-        }
-
-    }
-
-    /**
      * 将set集合中的数据输出到指定文件中
-     * @param set
      */
-    public static void outFile(Set<String> set){
+    public static void outFile(Collection<String> collection, String filename){
+        if (collection == null || collection.size() == 0){
+            return;
+        }
         BufferedWriter bw = null;
         try {
-            long time = System.currentTimeMillis();
 
-            bw = new BufferedWriter(new FileWriter(GlobalConfUtils.OutFile+time+".txt"));
+            String path = "";
+            if (filename.contains("MRO")){
+                path = GlobalConfUtils.OutPath + "mro/";
+            }
+            if (filename.contains("MRE")){
+                path = GlobalConfUtils.OutPath + "mre/";
+            }
+            File file = new File(path);
+            if (!file.exists()){
+                file.mkdirs();
+            }
+            bw = new BufferedWriter(new FileWriter(path + System.currentTimeMillis()+".csv"));
             // 遍历集合
-            for (String s : set) {
+            for (String line : collection) {
                 // 写数据
-                bw.write(s);
+                bw.write(line);
                 bw.newLine();
                 bw.flush();
-                System.out.println("写入文件成功--------------------------");
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -324,62 +359,111 @@ public class FileUtils {
             }
         }
     }
-
     /**
-     * 解压rar压缩文件
-     * @param zipFile
-     * @param destDir
-     * @return
+     * 将map中的数据写入到csv文件中
+     * @param xmlFile
+     * @param map 保存数据的map,一个key,对应一个list集合,根据key去聚合
      */
-    public static boolean unRAR(File zipFile, String destDir) {
-        // 解决路径中存在/..格式的路径问题
-        destDir = new File(destDir).getAbsoluteFile().getAbsolutePath();
-        while(destDir.contains("..")) {
-            String[] sepList = destDir.split("\\\\");
-            destDir = "";
-            for (int i = 0; i < sepList.length; i++) {
-                if(!"..".equals(sepList[i]) && i < sepList.length -1 && "..".equals(sepList[i+1])) {
-                    i++;
-                } else {
-                    destDir += sepList[i] + File.separator;
+    public static void outCSV(String xmlFile, Map<String, List> map){
+        if (map.size() == 0 || map ==null){//如果map集合为空,直接返回
+            System.err.println("map集合数据为空");
+            return;
+        }
+        System.out.println(xmlFile);
+        String name = xmlFile.substring(GlobalConfUtils.XmlPath.length(),xmlFile.length()-4);
+        String path = "";
+        if (name.contains("MRO")){
+            path = GlobalConfUtils.OutPath + "mro/";
+
+        }
+        if (name.contains("MRE")){
+            path = GlobalConfUtils.OutPath + "mre/";
+        }
+        File file = new File(path);
+        if (!file.exists()){//如果目录不存在,创建
+            file.mkdirs();
+        }
+        String csvFile = path+name+".csv";//文件名
+        try {//否则,输出为csv文件
+            BufferedWriter bw = new BufferedWriter(new FileWriter(csvFile));
+            if (xmlFile.contains("TD-LTE_MRO")) {
+                for (Map.Entry<String, List> entry : map.entrySet()) {
+                    List value = entry.getValue();
+                    if (value.size() > 1) {//至少两部分有关联
+                        StringBuffer sb2 = new StringBuffer();
+                        sb2.append(entry.getKey());
+                        for (Object v : value) {
+                            sb2.append(v.toString());
+                        }
+                        bw.write(sb2.toString());
+                        bw.newLine();
+                        bw.flush();
+                    }
                 }
             }
-        }
-
-        // 获取WinRAR.exe的路径，放在java web工程下的WebRoot路径下
-        String classPath = "";
-        /*try {
-            classPath = Thread.currentThread().getContextClassLoader().getResource("").toURI().getPath();
-        } catch (URISyntaxException e1) {
-            e1.printStackTrace();
-        }
-        // 兼容main方法执行和javaweb下执行
-        String winrarPath = (classPath.indexOf("WEB-INF") > -1 ? classPath.substring(0, classPath.indexOf("WEB-INF")) :
-                classPath.substring(0, classPath.indexOf("classes"))) + "/WinRAR/WinRAR.exe";
-        winrarPath = new File(winrarPath).getAbsoluteFile().getAbsolutePath();
-        System.out.println(winrarPath);
-*/
-        boolean bool = false;
-        if (!zipFile.exists()) {
-            return false;
-        }
-
-        // 开始调用命令行解压，参数-o+是表示覆盖的意思
-        String cmd = "E:\\tmp\\WinRaR.exe" + " X -o+ " + zipFile + " " + destDir;
-        System.out.println(cmd);
-        try {
-            Process proc = Runtime.getRuntime().exec(cmd);
-            if (proc.waitFor() != 0) {
-                if (proc.exitValue() == 0) {
-                    bool = false;
+            if (xmlFile.contains("TD-LTE_MRE")) {
+                for (Map.Entry<String, List> entry : map.entrySet()) {
+                    List value = entry.getValue();
+                    StringBuffer sb2 = new StringBuffer();
+                    sb2.append(entry.getKey());
+                    if (value.size() == 1){
+                        for (Object v : value){
+                            sb2.append(v.toString());
+                        }
+                    }
+                    if (value.size() > 1){
+                        List<List> lists = new ArrayList<>();
+                        for (int i =0; i<13; i++){
+                            lists.add(new ArrayList());
+                        }
+                        for (Object o : value){
+                            String[] split = o.toString().split(",");
+                            for (int i =0;i<split.length;i++){
+                                if (split[i].equals("NIL")){
+                                    continue;
+                                }
+                                lists.get(i).add(Integer.parseInt(split[i]));
+                            }
+                        }
+                        for (List v : lists){
+                            if (v.size() ==0){
+                                sb2.append("NIL,");
+                            }else {
+                                sb2.append(Collections.max(v)+",");
+                            }
+                        }
+                    }
+                    bw.write(sb2.toString());
+                    bw.newLine();
+                    bw.flush();
                 }
-            } else {
-                bool = true;
             }
-        } catch (Exception e) {
+            bw.close();
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.println("解压" + (bool ? "成功" : "失败"));
-        return bool;
+    }
+
+    /**
+     * 根据给定路径,清空文件夹
+     * @param path
+     */
+    public static void  deleteDir(String path){
+        File file = new File(path);
+        if(!file.exists()){//判断是否待删除目录是否存在
+            System.err.println("The dir are not exists!");
+            return;
+        }
+
+        String[] content = file.list();//取得当前目录下所有文件和文件夹
+        for(String name : content){
+            File temp = new File(path, name);
+            if(temp.isDirectory()){//判断是否是目录
+                deleteDir(temp.getAbsolutePath());//递归调用，删除目录里的内容
+                temp.delete();//删除空目录
+            }else{
+                temp.delete();
+            }
+        }
     }
 }

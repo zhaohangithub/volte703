@@ -1,4 +1,4 @@
-package com.guangdong.cn.tools;
+package com.guangdong.cn.sql;
 
 public class ContantsScheme {
 }
