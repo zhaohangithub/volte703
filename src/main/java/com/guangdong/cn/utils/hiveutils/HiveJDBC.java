@@ -3,6 +3,7 @@ package com.guangdong.cn.utils.hiveutils;
 import java.sql.*;
 
 import com.guangdong.cn.utils.GlobalConfUtils;
+import org.apache.hadoop.hive.ql.exec.UDF;
 
 public class HiveJDBC {
 	
@@ -24,9 +25,7 @@ public class HiveJDBC {
 			e.printStackTrace();
 		}
 	}
-
-	public static void showDatabases() throws Exception {
-		String sql = "show databases";
+	public static void show(String sql) throws Exception {
 		System.out.println("Running: " + sql + "\n");
 		rs = stmt.executeQuery(sql);
 		while (rs.next()) {

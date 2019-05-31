@@ -11,6 +11,7 @@ import java.util.Date;
 public class DateUtils {
     //线程安全的dateformat
     private static final FastDateFormat DATE_FORMAT = FastDateFormat.getInstance("yyyyMMddHHmmss");
+    private static final FastDateFormat DATE_FORMAT2 = FastDateFormat.getInstance("yyyy-MM-dd'T'HH:mm:ss.SSS");
 
     //日期转字符串
     public static String date2String(Date date){
@@ -22,6 +23,15 @@ public class DateUtils {
         Date date1 = null;
         try {
             date1 = DATE_FORMAT.parse(date);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return date1;
+    }
+    public static long string2Long(String date){
+        long date1 = 0;
+        try {
+            date1 = DATE_FORMAT2.parse(date).getTime();
         } catch (ParseException e) {
             e.printStackTrace();
         }

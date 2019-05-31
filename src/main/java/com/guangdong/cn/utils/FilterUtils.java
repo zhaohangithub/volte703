@@ -29,7 +29,7 @@ public class FilterUtils {
             ftpClientPool.returnObject(ftp);
             for (String file : list){
                 if (file.contains("TD-LTE_MRO") || file.contains("TD-LTE_MRE")) {
-                    if (file.contains("4") && file.contains("MRO")){//过滤条件,时间字符串
+                    if (file.contains("MRO")){//过滤条件,时间字符串
                         ftpQueue.put(file);
                     }
                 }
@@ -136,7 +136,7 @@ public class FilterUtils {
                             }
                             String value1 = element.attribute(name).getValue();
                             if (name.equals("TimeStamp")){
-                                value1 = value1.replace("T"," ");
+                                value1 = String.valueOf(DateUtils.string2Long(value1));
                             }
                             att.append(value1 + ",");
                         }

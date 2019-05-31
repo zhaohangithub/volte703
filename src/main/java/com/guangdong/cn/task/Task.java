@@ -2,10 +2,7 @@ package com.guangdong.cn.task;
 
 import com.guangdong.cn.app.App;
 import com.guangdong.cn.utils.DateUtils;
-import org.apache.commons.lang.time.DateFormatUtils;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimerTask;
 
@@ -15,22 +12,6 @@ public class Task extends TimerTask {
 
     public Task(Date date, int period) {
         this.date = date;
-        this.period = period;
-    }
-
-    public Date getDate() {
-        return date;
-    }
-
-    public void setDate(Date date) {
-        this.date = date;
-    }
-
-    public int getPeriod() {
-        return period;
-    }
-
-    public void setPeriod(int period) {
         this.period = period;
     }
 

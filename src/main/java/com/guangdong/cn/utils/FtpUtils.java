@@ -3,15 +3,10 @@ package com.guangdong.cn.utils;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPClientConfig;
-import org.apache.commons.net.ftp.FTPCommand;
 import org.apache.commons.net.ftp.FTPFile;
-
-import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.ivy.core.report.DownloadStatus;
 import org.apache.log4j.Logger;
 
 /** 
@@ -25,8 +20,8 @@ public class FtpUtils {
      */  
     public static List<String> list(String pathName,FTPClient ftp){
         //设置linux环境
-//        FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
-//        ftp.configure(conf);
+        FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
+        ftp.configure(conf);
         ftp.setRemoteVerificationEnabled(false);//远程授权
         List<String> fileList = new ArrayList<>();
         if(pathName.startsWith("/")&&pathName.endsWith("/")){
@@ -55,10 +50,10 @@ public class FtpUtils {
      * @param fileName   文件名
      * @param localPath   本地目标文件路径
      */
-    public static void downLoadFile(FTPClient ftp, String ftpPath, String fileName, String localPath){
+    public static void downLoadFile1(FTPClient ftp, String ftpPath, String fileName, String localPath){
         //设置linux环境
-//        FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
-//        ftp.configure(conf);
+        FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
+        ftp.configure(conf);
         try {
             if (ftp.isConnected()){
                 ftp.setRemoteVerificationEnabled(false);//远程检查授权
@@ -80,13 +75,13 @@ public class FtpUtils {
     }
 
     /**
-     * 断点续传
+     * 断点续传下载文件
      * @param ftp       ftp客户端
      * @param ftpPath   文件路径
      * @param fileName  文件名
      * @param localPath 本地目标文件路径
      */
-    public static DownloadStatus downLoadFile(FTPClient ftp, String ftpPath, String fileName, String localPath, int fileIndex) throws IOException {
+    public static DownloadStatus downLoadFile(FTPClient ftp, String ftpPath, String fileName, String localPath) throws IOException {
         //设置linux环境
         FTPClientConfig conf = new FTPClientConfig(FTPClientConfig.SYST_UNIX);
         ftp.configure(conf);
@@ -103,14 +98,20 @@ public class FtpUtils {
         ftp.changeWorkingDirectory(ftpPath);
         File localFile = new File(localPath + fileName);
         FTPFile[] files = ftp.listFiles(new String(ftpPath.getBytes("UTF-8"),"ISO-8859-1"));
-        long lRemoteSize = files[fileIndex].getSize();
+        FTPFile ftpFile = null;
+        for (FTPFile ftpFile1 : files){
+            if (ftpFile1.getName().equals(fileName)){
+                ftpFile = ftpFile1;
+            }
+        }
+        long lRemoteSize = ftpFile.getSize();
         if (localFile.exists()) {//判断本地有没有该文件
             long localSize = localFile.length();
             if (localSize >= lRemoteSize) {
-                System.out.println("本地文件已存在远程文件，下载中止");
-                logger.info("本地文件已存在远程文件，下载中止");
+                logger.info(fileName+":本地文件已存在，跳过");
                 return DownloadStatus.Local_Bigger_Remote;
             }
+            logger.info(fileName+":本地文件不完整,进行断点续传");
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(localFile, true));
             ftp.setRestartOffset(localSize);
             InputStream in = ftp.retrieveFileStream(new String(fileName.getBytes("UTF-8"), "ISO-8859-1"));
@@ -129,8 +130,7 @@ public class FtpUtils {
                     if (nowProcess > process) {
                         process = nowProcess;
                         if (process % 10 == 0) {
-                            System.out.println("下载进度：" + process);
-                            logger.info("下载进度：" + process);
+                            logger.info("下载进度：" + process +"%");
                         }
                     }
                 }
@@ -146,10 +146,10 @@ public class FtpUtils {
             boolean isDo = ftp.completePendingCommand();
             if (isDo) {
                 result = DownloadStatus.Download_From_Break_Success;
-                logger.info("断点下载文件成功");
+                logger.info(fileName+"断点下载文件成功");
             } else {
                 result = DownloadStatus.Download_From_Break_Failed;
-                logger.info("断点下载文件失败");
+                logger.info(fileName+"断点下载文件失败");
             }
         } else {
             BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(localFile));
@@ -168,8 +168,7 @@ public class FtpUtils {
                     if (nowProcess > process) {
                         process = nowProcess;
                         if (process % 10 == 0) {
-                            System.out.println("下载进度：" + process);
-                            logger.info("下载进度：" + process);
+                            logger.info("下载进度：" + process+"%");
                         }
                     }
                 }
@@ -184,15 +183,21 @@ public class FtpUtils {
             boolean upNewStatus = ftp.completePendingCommand();
             if (upNewStatus) {
                 result = DownloadStatus.Download_New_Success;
-                logger.info("全新下载文件成功");
+                logger.info(fileName+"全新下载文件成功");
             } else {
                 result = DownloadStatus.Download_New_Failed;
-                logger.info("全新下载文件失败");
+                logger.info(fileName+"全新下载文件失败");
             }
         }
         return result;
     }
 
+    /**
+     *
+     * @param ftp
+     * @param ftpPath
+     * @param fileName
+     */
     public static void upLoadFile(FTPClient ftp, String ftpPath, String fileName){
         System.out.println("文件上传");
         //设置linux环境
@@ -209,7 +214,7 @@ public class FtpUtils {
                 ftp.appendFile(name,bis);
                 bis.close();
             }else {
-                System.err.println("ftp连接已断开!");
+                logger.error("ftp连接已断开!");
             }
         } catch (IOException e) {
             e.printStackTrace();

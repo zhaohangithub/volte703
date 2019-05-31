@@ -33,7 +33,7 @@ public class Process {
             return;
         }
         ExecutorService threadPool = Executors.newFixedThreadPool(20);
-        for (int i=1;i <=5; i++){
+        for (int i=1;i <=10; i++){
             threadPool.execute(new Runnable() {
                 @Override
                 public void run() {
@@ -43,7 +43,7 @@ public class Process {
 
                             //ftp客户端去下载指定文件
                             FTPClient ftpClient = ftpClientPool.borrowObject();
-                            FtpUtils.downLoadFile(ftpClient, GlobalConfUtils.FtpPath, fileName, GlobalConfUtils.DownloadPath,downLoadQueue.size());
+                            FtpUtils.downLoadFile(ftpClient, GlobalConfUtils.FtpPath, fileName, GlobalConfUtils.DownloadPath);
                             ftpClientPool.returnObject(ftpClient);
 
                             String gzOrZip = GlobalConfUtils.DownloadPath + fileName;//要解压的文件

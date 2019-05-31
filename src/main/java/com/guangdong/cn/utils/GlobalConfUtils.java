@@ -9,14 +9,9 @@ public class GlobalConfUtils {
 
         public static String BeginTime = load.getString("BeginTime");
         public static int Period = Integer.parseInt(load.getString("Period"));
-        //xml文件操作
-        public static String valueElement = load.getString("ValueElement");
-        public static String Nodes = load.getString("Nodes");
+
+        //xml文件节点参数
         public static String SAX_Nodes = load.getString("SAX_Nodes");
-        public static int HW_Index = Integer.parseInt(load.getString("HW_Index"));
-        public static String MmeUeS1apId = load.getString("MmeUeS1apId");
-        public static String CellId = load.getString("CellId");
-        public static String TimeStamp = load.getString("TimeStamp");
 
         //ftp连接池
         public static String FtpUrl = load.getString("FtpUrl");
@@ -43,15 +38,7 @@ public class GlobalConfUtils {
         public static String hiveUser = load.getString("hiveUser");
         public static String hivePassword = load.getString("hivePassword");
 
-        //hbase
-        public static String ZookeeperQuorum = load.getString("ZookeeperQuorum");
-        public static String ZookeeperPort = load.getString("ZookeeperPort");
-        public static String Hmaster = load.getString("Hmaster");
 
-
-        //redis
-        public static String RedisHost = load.getString("RedisHost");
-        public static String RedisPort = load.getString("RedisPort");
 
 
 }
